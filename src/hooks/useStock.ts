@@ -6,7 +6,7 @@ import isFunction from 'lodash/isFunction';
 import { useLazyRef } from '../utils/useLazyRef';
 import { SetStateAction } from '../typings/SetStateAction';
 import { ObserversControl, useObservers } from './useObservers';
-import { getOrReturn, normalizePath } from '../utils/pathUtils';
+import { get, toPxth } from 'pxth';
 
 export type Stock<T extends object> = {
     /** Function for setting value. Deeply sets value, using path to variable. @see https://lodash.com/docs/4.17.15#set */
@@ -40,9 +40,7 @@ export const useStock = <T extends object>({ initialValues }: StockConfig<T>): S
 
     const setValue = useCallback(
         (path: string, action: SetStateAction<unknown>) => {
-            path = normalizePath(path);
-
-            const value = isFunction(action) ? action(getOrReturn(values.current, path)) : action;
+            const value = isFunction(action) ? action(get(values.current, toPxth(path))) : action;
 
             set(values.current, path, value);
 
@@ -59,7 +57,7 @@ export const useStock = <T extends object>({ initialValues }: StockConfig<T>): S
         [values, notifyAll]
     );
 
-    const getValue = useCallback(<V>(path: string) => getOrReturn(values.current, path) as V, [values]);
+    const getValue = useCallback(<V>(path: string) => get<T, V>(values.current, toPxth(path))!, [values]);
 
     const getValues = useCallback(() => values.current, [values]);
 

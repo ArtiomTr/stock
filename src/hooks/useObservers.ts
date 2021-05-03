@@ -2,10 +2,8 @@ import { useCallback, useRef } from 'react';
 import invariant from 'tiny-invariant';
 import { BatchUpdate, Observer } from '../typings';
 import { ObserverArray, ObserverKey } from '../utils/ObserverArray';
-import { getOrReturn, isInnerPath, normalizePath } from '../utils/pathUtils';
+import { get, isNestedPath, toObjectKey, toPxth, ROOT_PATH } from 'pxth';
 import { useLazyRef } from '../utils/useLazyRef';
-
-export const ROOT_PATH = Symbol();
 
 export type ObserversControl<T> = {
     /** Watch stock value. Returns cleanup function. */
@@ -52,22 +50,22 @@ export const useObservers = <T>(): ObserversControl<T> => {
     ]);
 
     const observe = useCallback(<V>(path: string, observer: Observer<V>) => {
-        path = normalizePath(path);
-        if (!Object.prototype.hasOwnProperty.call(observers.current, path)) {
-            observers.current[path] = new ObserverArray();
+        const objectKey = toObjectKey(toPxth(path));
+        if (!Object.prototype.hasOwnProperty.call(observers.current, objectKey)) {
+            observers.current[objectKey as string] = new ObserverArray();
         }
-        return observers.current[path].add(observer as Observer<unknown>);
+        return observers.current[objectKey as string].add(observer as Observer<unknown>);
     }, []);
 
     const stopObserving = useCallback((path: string, observerKey: ObserverKey) => {
-        path = normalizePath(path);
-        const currentObservers = observers.current[path];
+        const objectKey = toObjectKey(toPxth(path));
+        const currentObservers = observers.current[objectKey as string];
 
         invariant(currentObservers, 'Cannot remove observer from value, which is not observing');
 
         currentObservers.remove(observerKey);
 
-        if (currentObservers.isEmpty()) delete observers.current[path];
+        if (currentObservers.isEmpty()) delete observers.current[objectKey as string];
     }, []);
 
     const watch = useCallback(
@@ -89,7 +87,7 @@ export const useObservers = <T>(): ObserversControl<T> => {
     );
 
     const isObserved = useCallback(
-        (path: string) => Object.prototype.hasOwnProperty.call(observers.current, normalizePath(path)),
+        (path: string) => Object.prototype.hasOwnProperty.call(observers.current, toObjectKey(toPxth(path))),
         []
     );
 
@@ -98,7 +96,7 @@ export const useObservers = <T>(): ObserversControl<T> => {
             batchUpdate({ paths, values });
             paths.forEach(path => {
                 const observer = observers.current[path];
-                const subValue = getOrReturn(values, path);
+                const subValue = get(values, toPxth(path));
                 observer.call(subValue);
             });
         },
@@ -107,10 +105,12 @@ export const useObservers = <T>(): ObserversControl<T> => {
 
     const notifySubTree = useCallback(
         (path: string, values: T) => {
-            path = normalizePath(path);
-            const subPaths = getObserversKeys().filter(
-                tempPath => isInnerPath(path, tempPath) || path === tempPath || isInnerPath(tempPath, path)
-            );
+            const pxth = toPxth(path);
+            const subPaths = getObserversKeys().filter(objectKey => {
+                const nestedPxth = toPxth(objectKey);
+
+                return isNestedPath(pxth, nestedPxth) || isNestedPath(nestedPxth, pxth);
+            });
             notifyPaths(subPaths, values);
         },
         [notifyPaths, getObserversKeys]

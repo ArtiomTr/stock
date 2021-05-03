@@ -1,5 +1,6 @@
-import { ROOT_PATH, useObservers } from '../../src';
+import { useObservers } from '../../src';
 import { renderHook, act } from '@testing-library/react-hooks';
+import { ROOT_PATH } from 'pxth';
 
 const renderUseObserversHook = () => renderHook(() => useObservers());
 

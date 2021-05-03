@@ -1,12 +1,12 @@
+import { isNestedPath, toPxth } from 'pxth';
 import { useCallback, useEffect } from 'react';
 import invariant from 'tiny-invariant';
 import { Stock } from '../hooks/useStock';
 import { Observer } from '../typings';
 import { StockProxy } from '../typings/StockProxy';
-import { isInnerPath, normalizePath } from './pathUtils';
 
 const shouldUseProxy = (proxy: StockProxy | undefined, path: string) =>
-    proxy && (isInnerPath(proxy.path, path) || normalizePath(proxy.path).trim() === normalizePath(path).trim());
+    proxy && isNestedPath(toPxth(proxy.path), toPxth(path));
 
 /**
  * Helper function. Calls `standardCallback` if `proxy` is undefined, or if `path` isn't inner path of `proxy.path` variable.

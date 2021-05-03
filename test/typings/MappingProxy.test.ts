@@ -1,9 +1,9 @@
+import { get, ROOT_PATH, toPxth } from 'pxth';
 import { MappingProxy, Observer } from '../../src/typings';
-import { getOrReturn } from '../../src/utils/pathUtils';
 
 describe('Mapping proxy', () => {
     it('should instantiate', () => {
-        expect(() => new MappingProxy({}, '')).not.toThrowError();
+        expect(() => new MappingProxy({}, (ROOT_PATH as unknown) as string)).not.toThrowError();
     });
 
     it('observe/stopObserving value', () => {
@@ -24,7 +24,7 @@ describe('Mapping proxy', () => {
     });
 
     it('observe/stopObserving value (empty parent path)', () => {
-        const proxy = new MappingProxy({ hello: 'a.d.c', bye: 'b.b.d' }, '');
+        const proxy = new MappingProxy({ hello: 'a.d.c', bye: 'b.b.d' }, (ROOT_PATH as unknown) as string);
 
         const defaultObserve = jest.fn();
         const observer = jest.fn();
@@ -41,7 +41,7 @@ describe('Mapping proxy', () => {
     });
 
     it('observe/stopObserving (empty mapping path)', () => {
-        const proxy = new MappingProxy({ '': 'a.d.c' }, 'asdf');
+        const proxy = new MappingProxy({ [ROOT_PATH]: 'a.d.c' }, 'asdf');
 
         const defaultObserve = jest.fn();
         const observer = jest.fn();
@@ -106,7 +106,7 @@ describe('Mapping proxy', () => {
         defaultObserve.mockClear();
 
         proxy.watch('registeredUser.personalData', observer, defaultObserve);
-        expect(defaultObserve).toBeCalledWith('', expect.any(Function));
+        expect(defaultObserve).toBeCalledWith(ROOT_PATH, expect.any(Function));
 
         observers[0](rawData.registeredUser.name);
         expect(observer).toBeCalledWith(fullUser.personalData.name.firstName);
@@ -185,12 +185,12 @@ describe('Mapping proxy', () => {
         const observer = jest.fn();
 
         proxy.watch('truck.owner.contacts[0]', observer, defaultObserve);
-        expect(defaultObserve).toBeCalledWith('', expect.any(Function));
+        expect(defaultObserve).toBeCalledWith(ROOT_PATH, expect.any(Function));
 
         defaultObserve.mockClear();
 
         proxy.watch('truck.info', observer, defaultObserve);
-        expect(defaultObserve).toBeCalledWith('', expect.any(Function));
+        expect(defaultObserve).toBeCalledWith(ROOT_PATH, expect.any(Function));
 
         observers[0](rawData);
         expect(observer).toBeCalledWith(fullData.truck.owner.contacts[0]);
@@ -259,7 +259,7 @@ describe('Mapping proxy', () => {
             'registeredUser'
         );
 
-        const defaultGet = (path: string) => getOrReturn(rawData, path);
+        const defaultGet = (path: string) => get(rawData, toPxth(path)) as any;
 
         expect(proxy.getValue('registeredUser.personalData.name.firstName', defaultGet)).toBe(
             fullUser.personalData.name.firstName
